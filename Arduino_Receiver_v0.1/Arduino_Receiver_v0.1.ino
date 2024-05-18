@@ -41,18 +41,18 @@
 
 /* VARIABLES */
 String received; // store bluetooth received data
-String temp; // deal with buffer values
-int key; // store first value of received array
-int value; // store second value of received array
+// String temp; // deal with buffer values
+// int key; // store first value of received array
+// int value; // store second value of received array
 int x = 0; // direction of front wheels
 int x_change = 0;
 int y = 0;
-int motor_r = 0;
-int motor_l = 0;
+// int motor_r = 0;
+// int motor_l = 0;
 bool shut_down = false;
-const int BUFFER_SIZE = 10;
-int buffer[BUFFER_SIZE];
-int writeIndex; // Index to track where to write data
+int buffer[] = {0, 0};
+unsigned long lastSerialMillis = 0;  // Milliseconds since last serial check
+const int serialCheckInterval = 10; // Check for data every 10 milliseconds
 
 void make_step(bool a, bool b, bool c, bool d) {
   if (a) { digitalWrite(STEPPER_1, HIGH); } else { digitalWrite(STEPPER_1, LOW); }
@@ -82,93 +82,71 @@ void setup() {
 
 
 void writeToBuffer(String data) {
-  if (writeIndex < BUFFER_SIZE) {  // Check for free space
-    buffer[writeIndex] = String(String(data.substring(0,1).toInt()) + String(data.substring(1).toInt() + 1000)).toInt();
-    writeIndex++;
+  if (data.substring(0,1).toInt() == 1) {
+    buffer[1] = data.substring(1).toInt();
   } else {
-    Serial.println("Buffer overflow");
-  }
-}
-
-int readFromBuffer() {
-  if (0 < writeIndex) {  // Check for available data
-    int data = buffer[0];
-    for (int i = 0; i < BUFFER_SIZE - 1; i++) {
-      buffer[i] = buffer[i + 1]; // Shift elements down
-    }
-    writeIndex--;
-    return data;
-  } else {
-    return -1;
+    buffer[0] = data.substring(1).toInt();
   }
 }
 
 
 void loop() {
-  if (Serial.available() && !shut_down) {
-    // digitalWrite(LED, HIGH);
-    // delay(20);
-    // digitalWrite(LED, LOW);
-    received = Serial.readString();
-    Serial.println(received);
-    if (received == "00") {
-      x_change = 0;
-      digitalWrite(MOTOR_RF, LOW);
-      digitalWrite(MOTOR_LF, LOW);
-      digitalWrite(MOTOR_LB, LOW);
-      digitalWrite(MOTOR_RB, LOW);
-      Serial.println("Shutting down...");
-      digitalWrite(LED, HIGH);
-      delay(1000);
-      digitalWrite(LED, LOW);
-      shut_down = true;
-    }
-    writeToBuffer(received);
-    for (int i = 0; i < BUFFER_SIZE - 1; i++) {
-      Serial.print(String(buffer[i]) + " ");
-    }
-  } else {
-    int tmp_int = readFromBuffer();
-    if (tmp_int != -1 && !shut_down) {
-      temp = String(tmp_int);
-      key = temp.substring(0,1).toInt();
-      value = temp.substring(1).toInt() - 1000;
-      if (key == 1) {
-        if (value != x) {
-          if (abs(x - value) > 2) {
-            if (x_change != 0) {
-              x = x - x_change;
-            }
-            x_change = x - value;
-            x_change = -1 * x_change;
-            x = value;
-          }
+  // commented out to test polling the Serial.available() property (bottom of void loop() {..})
+  // if (Serial.available() && !shut_down) { // check if new instructions are available
+  //   // digitalWrite(LED, HIGH);
+  //   // delay(20);
+  //   // digitalWrite(LED, LOW);
+  //   received = Serial.readString(); // receive instructions
+  //   Serial.println(received); // for testing
+  //   if (received == "00") {
+  //     // shutdown everything (needs to be updated)
+  //     Serial.println("Shutting down...");
+  //     digitalWrite(LED, HIGH);
+  //     delay(1000);
+  //     digitalWrite(LED, LOW);
+  //     shut_down = true;
+  //   }
+  //   writeToBuffer(received); // write received instructions to buffer (to avoid overload)
+  //   for (int i = 0; i < 2; i++) { // print buffer (for testing)
+  //     Serial.print(String(buffer[i]) + " ");
+  //   }
+  // }  
+  // else { // if no new instructions are available, carry existing instructions out if needed
+    if (y != buffer[0]) {
+      // check if forwards/backwards needs to be updated
+      if (buffer[0] == 1) {
+        digitalWrite(MOTOR_RF, HIGH);
+        digitalWrite(MOTOR_LF, HIGH);
+        digitalWrite(MOTOR_LB, LOW);
+        digitalWrite(MOTOR_RB, LOW);
+      } else if (buffer[0] == -1) {
+        digitalWrite(MOTOR_RF, LOW);
+        digitalWrite(MOTOR_LF, LOW);
+        digitalWrite(MOTOR_LB, HIGH);
+        digitalWrite(MOTOR_RB, HIGH);
+      } else {
+        digitalWrite(MOTOR_RF, LOW);
+        digitalWrite(MOTOR_LF, LOW);
+        digitalWrite(MOTOR_LB, LOW);
+        digitalWrite(MOTOR_RB, LOW);
+      }
+      y = buffer[0];
+    } else if (buffer[1] != x) {
+      // check if direction needs to be updated
+      // only happens if forwards/backwards motion has not been updated
+      if (abs(x - buffer[1]) > 2) {
+        if (x_change != 0) {
+          x = x - x_change;
         }
-      } else if (key == 2) {
-        if (y != value) {
-          if (value == 1) {
-            digitalWrite(MOTOR_RF, HIGH);
-            digitalWrite(MOTOR_LF, HIGH);
-            digitalWrite(MOTOR_LB, LOW);
-            digitalWrite(MOTOR_RB, LOW);
-          } else if (value == -1) {
-            digitalWrite(MOTOR_RF, LOW);
-            digitalWrite(MOTOR_LF, LOW);
-            digitalWrite(MOTOR_LB, HIGH);
-            digitalWrite(MOTOR_RB, HIGH);
-          } else {
-            digitalWrite(MOTOR_RF, LOW);
-            digitalWrite(MOTOR_LF, LOW);
-            digitalWrite(MOTOR_LB, LOW);
-            digitalWrite(MOTOR_RB, LOW);
-          }
-          y = value;
-        }
+        x_change = x - buffer[1];
+        x_change = -1 * x_change;
+        x = buffer[1];
       }
     }
     if (x_change != 0) {
+      // update steering if required
       if (x_change > 0) {
-        // Serial.println("Turning CW");
+        // Turning CW
         make_step(true, false, false, false);
         delay(3);
         make_step(false, true, false, false);
@@ -179,7 +157,7 @@ void loop() {
         delay(3);
         x_change--;
       } else if (x_change < 0) {
-        // Serial.println("Turning CCW");
+        // Turning CCW
         make_step(false, false, false, true);
         delay(3);
         make_step(false, false, true, false);
@@ -191,12 +169,42 @@ void loop() {
         x_change++;
       }
     } else {
+      // turn off stepper motor if no steering adjustments are needed
       make_step(false, false, false, false);
-      if (shut_down) {
-        // if shut down, return to starting position
-        x_change = x * -1;
-        x = 0;
-      }
     }
-  }
+    if (shut_down) {
+      // if shut down, return to starting position
+      digitalWrite(MOTOR_RF, LOW);
+      digitalWrite(MOTOR_LF, LOW);
+      digitalWrite(MOTOR_LB, LOW);
+      digitalWrite(MOTOR_RB, LOW);
+      x_change = x * -1;
+      x = 0;
+    }
+    unsigned long currentMillis = millis();
+    if (currentMillis - lastSerialMillis >= serialCheckInterval) {
+      if (Serial.available()) {
+        // digitalWrite(LED, HIGH);
+        // delay(20);
+        // digitalWrite(LED, LOW);
+        received = Serial.readString(); // receive instructions
+        Serial.println(received); // for testing
+        if (received == "00") {
+          // shutdown everything (needs to be updated)
+          Serial.println("Shutting down...");
+          digitalWrite(LED, HIGH);
+          delay(1000);
+          digitalWrite(LED, LOW);
+          shut_down = true;
+        }
+        writeToBuffer(received); // write received instructions to buffer (to avoid overload)
+        // for (int i = 0; i < 2; i++) { // print buffer (for testing)
+        //   Serial.print(String(buffer[i]) + " ");
+        // }
+        // send buffer to sender to check if instructions were received correctly
+        Serial.println("x" + String(buffer[0] + 1) + String(buffer[1]));
+      }
+      lastSerialMillis = currentMillis;
+    }
+  // }
 }

@@ -93,7 +93,7 @@ void loop() {
   }
   if (abs(prevX - joyX) > 30) {
     prevX = joyX;
-    to_transmit = "1" + String(joyX) ;
+    to_transmit = "1" + String(joyX);
     Serial.println("^ " + to_transmit);
     digitalWrite(LED, HIGH);
     BTSerial.println(to_transmit);
@@ -107,6 +107,19 @@ void loop() {
   }
   if (BTSerial.available()) {
     received = BTSerial.readString();
+    if (received.substring(0,1) == "x") {
+      // confirm receiver has received the correct instructions
+      int car_y = received.substring(1,2).toInt() - 1;
+      int car_x = received.substring(2).toInt();
+      if (car_y != y_dir) {
+        BTSerial.println("2" + String(y_dir));
+        delay(50);
+      }
+      if (abs(car_x - joyX) > 30) {
+        BTSerial.println("1" + String(joyX));
+        delay(50);
+      }
+    }
     Serial.print("v " + received);
   }
   if ((digitalRead(BT_STATE) == 1) && !bt_connected) {
