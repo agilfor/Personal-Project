@@ -44,6 +44,7 @@ String to_transmit;
 bool bt_connected;
 int y_dir = 0;
 bool y_changed = false;
+int x;
 
 void setup() {
   pinMode(JOY_BTN, INPUT);
@@ -65,7 +66,7 @@ void loop() {
   joyY = joyY - 512;
   joyY =  -1 * joyY;
 
-  if (abs(prevY - joyY) > 40) { 
+  if (abs(prevY - joyY) > 40) {
     prevY = joyY;
     if (joyY > 250 && y_dir != 1) {
       to_transmit = "21";
@@ -83,11 +84,11 @@ void loop() {
     if (y_changed) {
       // Serial.print(joyY);
       Serial.println("^ " + to_transmit);
-      digitalWrite(LED, HIGH);
+      // digitalWrite(LED, HIGH);
       BTSerial.println(to_transmit);
-      delay(20);
-      digitalWrite(LED, LOW);
-      delay(500);
+      // delay(20);
+      // digitalWrite(LED, LOW);
+      // delay(500);
       y_changed = false;
     }
   }
@@ -95,11 +96,12 @@ void loop() {
     prevX = joyX;
     to_transmit = "1" + String(joyX);
     Serial.println("^ " + to_transmit);
-    digitalWrite(LED, HIGH);
+    // digitalWrite(LED, HIGH);
     BTSerial.println(to_transmit);
-    delay(20);
-    digitalWrite(LED, LOW);
-    delay(500);
+    x = joyX;
+    // delay(20);
+    // digitalWrite(LED, LOW);
+    // delay(500);
   }
   if (Serial.available()) {
     received = Serial.readString();
@@ -111,13 +113,16 @@ void loop() {
       // confirm receiver has received the correct instructions
       int car_y = received.substring(1,2).toInt() - 1;
       int car_x = received.substring(2).toInt();
+      Serial.println("x: " + String(x) + ", y: " + String(y_dir));
       if (car_y != y_dir) {
         BTSerial.println("2" + String(y_dir));
-        delay(50);
+        Serial.println("2" + String(y_dir));
+        delay(20);
       }
-      if (abs(car_x - joyX) > 30) {
-        BTSerial.println("1" + String(joyX));
-        delay(50);
+      if (abs(car_x - x) > 30) {
+        BTSerial.println("1" + String(x));
+        Serial.println("1" + String(x));
+        delay(20);
       }
     }
     Serial.print("v " + received);

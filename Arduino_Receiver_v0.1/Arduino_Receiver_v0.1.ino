@@ -188,7 +188,7 @@ void loop() {
         // delay(20);
         // digitalWrite(LED, LOW);
         received = Serial.readString(); // receive instructions
-        Serial.println(received); // for testing
+        // Serial.println(received); // for testing
         if (received == "00") {
           // shutdown everything (needs to be updated)
           Serial.println("Shutting down...");
