@@ -54,11 +54,95 @@ int buffer[] = {0, 0};
 unsigned long lastSerialMillis = 0;  // Milliseconds since last serial check
 const int serialCheckInterval = 10; // Check for data every 10 milliseconds
 
-void make_step(bool a, bool b, bool c, bool d) {
-  if (a) { digitalWrite(STEPPER_1, HIGH); } else { digitalWrite(STEPPER_1, LOW); }
-  if (b) { digitalWrite(STEPPER_2, HIGH); } else { digitalWrite(STEPPER_2, LOW); }
-  if (c) { digitalWrite(STEPPER_3, HIGH); } else { digitalWrite(STEPPER_3, LOW); }
-  if (d) { digitalWrite(STEPPER_4, HIGH); } else { digitalWrite(STEPPER_4, LOW); }
+// void make_step(bool a, bool b, bool c, bool d) {
+//   if (a) { digitalWrite(STEPPER_1, HIGH); } else { digitalWrite(STEPPER_1, LOW); }
+//   if (b) { digitalWrite(STEPPER_2, HIGH); } else { digitalWrite(STEPPER_2, LOW); }
+//   if (c) { digitalWrite(STEPPER_3, HIGH); } else { digitalWrite(STEPPER_3, LOW); }
+//   if (d) { digitalWrite(STEPPER_4, HIGH); } else { digitalWrite(STEPPER_4, LOW); }
+// }
+
+void stop_stepper() {
+  digitalWrite(STEPPER_1, LOW);
+  digitalWrite(STEPPER_2, LOW);
+  digitalWrite(STEPPER_3, LOW);
+  digitalWrite(STEPPER_4, LOW);
+  delay(3);
+}
+
+// int rot_L(int a) {
+//   // Serial.println("1: " + String(a));
+//   // a = a << 1 & 0xf;
+//   // Serial.println("2: " + String(a));
+//   // a = a * 2;
+//   // if (a >= 16) {
+//     // a = 1;
+//     // Serial.println("3: " + String(a));
+//   // }
+//   bool first = a & 0x08 >> 3;
+//   bool second = a & 0x04 >> 2;
+//   bool third = a & 0x02 >> 1;
+//   bool fourth = a & 0x01;
+//   // Serial.println(String(a & 0xf));
+//   Serial.println(String(a & 0x08) + ", " + String(a & 0x04) + ", " + String(a & 0x02) + ", " + String(a & 0x01));
+//   Serial.println(String(first) + ", " + String(second) + ", " + String(third) + ", " + String(fourth));
+//   if (first) { digitalWrite(STEPPER_1, HIGH); } else { digitalWrite(STEPPER_1, LOW); }
+//   if (second) { digitalWrite(STEPPER_2, HIGH); } else { digitalWrite(STEPPER_2, LOW); }
+//   if (third) { digitalWrite(STEPPER_3, HIGH); } else { digitalWrite(STEPPER_3, LOW); }
+//   if (fourth) { digitalWrite(STEPPER_4, HIGH); } else { digitalWrite(STEPPER_4, LOW); }
+//   delay(500);
+//   return a;
+// }
+
+// int rot_R(int a) {
+  // Serial.println("1: " + String(a));
+  // a = a >> 1 & 0xf;
+  // Serial.println("2: " + String(a));
+  // a = a / 2;
+  // if (a == 0 || a < 1) {
+    // a = 1;
+    // Serial.println("3: " + String(a));
+  // }
+  // bool first = a & 0x08 >> 3;
+  // bool second = a & 0x04 >> 2;
+  // bool third = a & 0x02 >> 1;
+  // bool fourth = a & 0x01;
+  // // Serial.println(String(a & 0xf));
+  // Serial.println(String(a & 0x08) + ", " + String(a & 0x04) + ", " + String(a & 0x02) + ", " + String(a & 0x01));
+  // Serial.println(String(first) + ", " + String(second) + ", " + String(third) + ", " + String(fourth));
+  // if (first) { digitalWrite(STEPPER_1, HIGH); } else { digitalWrite(STEPPER_1, LOW); }
+  // if (second) { digitalWrite(STEPPER_2, HIGH); } else { digitalWrite(STEPPER_2, LOW); }
+  // if (third) { digitalWrite(STEPPER_3, HIGH); } else { digitalWrite(STEPPER_3, LOW); }
+  // if (fourth) { digitalWrite(STEPPER_4, HIGH); } else { digitalWrite(STEPPER_4, LOW); }
+  // delay(500);
+  // return a;
+// }
+
+int rot(int a) {
+  // Serial.println("1: " + String(a));
+  // a = a >> 1 & 0xf;
+  // Serial.println("2: " + String(a));
+  // a = a / 2;
+  // if (a == 0 || a < 1) {
+    // a = 1;
+    // Serial.println("3: " + String(a));
+  // }
+  // bool first = a & 0x08 >> 3;
+  // bool second = a & 0x04 >> 2;
+  // bool third = a & 0x02 >> 1;
+  // bool fourth = a & 0x01;
+  // // Serial.println(String(a & 0xf));
+  // Serial.println(String(a & 0x08) + ", " + String(a & 0x04) + ", " + String(a & 0x02) + ", " + String(a & 0x01));
+  // Serial.println(String(first) + ", " + String(second) + ", " + String(third) + ", " + String(fourth));
+  // bool first = (a == 8) ? true : false;
+  // bool second = (a == 4) ? true : false;
+  // bool third = (a == 2) ? true : false;
+  // bool fourth = (a == 1) ? true : false;
+  if (a == 8) { digitalWrite(STEPPER_1, HIGH); } else { digitalWrite(STEPPER_1, LOW); }
+  if (a == 4) { digitalWrite(STEPPER_2, HIGH); } else { digitalWrite(STEPPER_2, LOW); }
+  if (a == 2) { digitalWrite(STEPPER_3, HIGH); } else { digitalWrite(STEPPER_3, LOW); }
+  if (a == 1) { digitalWrite(STEPPER_4, HIGH); } else { digitalWrite(STEPPER_4, LOW); }
+  delay(3);
+  // return a;
 }
 
 void setup() {
@@ -72,7 +156,8 @@ void setup() {
   pinMode(STEPPER_4, OUTPUT);
   pinMode(LED, OUTPUT);
   digitalWrite(LED, LOW);
-  make_step(false, false, false, false);
+  stop_stepper();
+  // make_step(false, false, false, false);
   // y_direction(0);
 
   // start communication
@@ -147,30 +232,39 @@ void loop() {
       // update steering if required
       if (x_change > 0) {
         // Turning CW
-        make_step(true, false, false, false);
-        delay(3);
-        make_step(false, true, false, false);
-        delay(3);
-        make_step(false, false, true, false);
-        delay(3);
-        make_step(false, false, false, true);
-        delay(3);
+        // make_step(true, false, false, false);
+        // delay(3);
+        // make_step(false, true, false, false);
+        // delay(3);
+        // make_step(false, false, true, false);
+        // delay(3);
+        // make_step(false, false, false, true);
+        // delay(3);
+        for (int i = 8; i >= 1; i = i >> 1) {
+          rot(i);
+          // Serial.println(i);
+        }
         x_change--;
       } else if (x_change < 0) {
         // Turning CCW
-        make_step(false, false, false, true);
-        delay(3);
-        make_step(false, false, true, false);
-        delay(3);
-        make_step(false, true, false, false);
-        delay(3);
-        make_step(true, false, false, false);
-        delay(3);
+        // make_step(false, false, false, true);
+        // delay(3);
+        // make_step(false, false, true, false);
+        // delay(3);
+        // make_step(false, true, false, false);
+        // delay(3);
+        // make_step(true, false, false, false);
+        // delay(3);
+        for (int i = 1; i <= 8; i = i << 1) {
+          rot(i);
+          // Serial.println(i);
+        }
         x_change++;
       }
     } else {
       // turn off stepper motor if no steering adjustments are needed
-      make_step(false, false, false, false);
+      // make_step(false, false, false, false);
+      stop_stepper();
     }
     if (shut_down) {
       // if shut down, return to starting position

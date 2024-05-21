@@ -45,6 +45,7 @@ bool bt_connected;
 int y_dir = 0;
 bool y_changed = false;
 int x;
+bool sudo = false;
 
 void setup() {
   pinMode(JOY_BTN, INPUT);
@@ -57,16 +58,18 @@ void setup() {
 }
 
 void loop() {
-  joyX = analogRead(JOY_X);
-  joyY = analogRead(JOY_Y);
-  // reduce measurements so that the motor turns within the limits of the hardware
-  // the multiplying by 100 is done so that I don't have to deal with float to int conversions
-  joyX = joyX - 512;
-  joyX = joyX / 2;
-  joyY = joyY - 512;
-  joyY =  -1 * joyY;
+  if (!sudo) {
+    joyX = analogRead(JOY_X);
+    joyY = analogRead(JOY_Y);
+    // reduce measurements so that the motor turns within the limits of the hardware
+    // the multiplying by 100 is done so that I don't have to deal with float to int conversions
+    joyX = joyX - 512;
+    joyX = joyX / 2;
+    joyY = joyY - 512;
+    joyY =  -1 * joyY;
+  }
 
-  if (abs(prevY - joyY) > 40) {
+  if (abs(prevY - joyY) > 40 && !sudo) {
     prevY = joyY;
     if (joyY > 250 && y_dir != 1) {
       to_transmit = "21";
@@ -92,7 +95,7 @@ void loop() {
       y_changed = false;
     }
   }
-  if (abs(prevX - joyX) > 30) {
+  if (abs(prevX - joyX) > 40 && !sudo) {
     prevX = joyX;
     to_transmit = "1" + String(joyX);
     Serial.println("^ " + to_transmit);
@@ -105,11 +108,23 @@ void loop() {
   }
   if (Serial.available()) {
     received = Serial.readString();
-    BTSerial.print(received);
+    received.trim();
+    Serial.println("^ " + received);
+    if (received == "01" || received == "sudo") {
+      if (sudo) {
+        sudo = false;
+        Serial.println("Sudo disabled");
+      } else {
+        sudo = true;
+        Serial.println("Sudo enabled");
+      }
+    } else {
+      BTSerial.print(received);
+    }
   }
   if (BTSerial.available()) {
     received = BTSerial.readString();
-    if (received.substring(0,1) == "x") {
+    if (received.substring(0,1) == "x" && !sudo) {
       // confirm receiver has received the correct instructions
       int car_y = received.substring(1,2).toInt() - 1;
       int car_x = received.substring(2).toInt();
@@ -117,12 +132,12 @@ void loop() {
       if (car_y != y_dir) {
         BTSerial.println("2" + String(y_dir));
         Serial.println("2" + String(y_dir));
-        delay(20);
+        delay(10);
       }
       if (abs(car_x - x) > 30) {
         BTSerial.println("1" + String(x));
         Serial.println("1" + String(x));
-        delay(20);
+        delay(10);
       }
     }
     Serial.print("v " + received);
