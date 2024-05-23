@@ -43,7 +43,7 @@ String received;
 String to_transmit;
 bool bt_connected;
 int y_dir = 0;
-bool y_changed = false;
+// bool y_changed = false;
 int x;
 bool sudo = false;
 
@@ -71,46 +71,29 @@ void loop() {
 
   if (abs(prevY - joyY) > 40 && !sudo) {
     prevY = joyY;
-    if (joyY > 250 && y_dir != 1) {
-      to_transmit = "21";
-      y_dir = 1;
-      y_changed = true;
-    } else if (joyY < -250 && y_dir != -1) {
-      to_transmit = "2-1";
-      y_dir = -1;
-      y_changed = true;
-    } else if (abs(joyY) <= 250 && y_dir != 0) {
-      to_transmit = "20";
+    if (joyY > 250 && y_dir != 2) {
+      y_dir = 2;
+    } else if (joyY < -250 && y_dir != 0) {
       y_dir = 0;
-      y_changed = true;
-    }
-    if (y_changed) {
-      // Serial.print(joyY);
-      Serial.println("^ " + to_transmit);
-      // digitalWrite(LED, HIGH);
-      BTSerial.println(to_transmit);
-      // delay(20);
-      // digitalWrite(LED, LOW);
-      // delay(500);
-      y_changed = false;
+    } else if (abs(joyY) <= 250 && y_dir != 1) {
+      y_dir = 1;
     }
   }
   if (abs(prevX - joyX) > 40 && !sudo) {
     prevX = joyX;
-    to_transmit = "1" + String(joyX);
-    Serial.println("^ " + to_transmit);
-    // digitalWrite(LED, HIGH);
-    BTSerial.println(to_transmit);
+    // to_transmit = "1" + String(joyX);
     x = joyX;
-    // delay(20);
-    // digitalWrite(LED, LOW);
-    // delay(500);
   }
+  if ((abs(prevY - joyY) > 40 && !sudo) || (abs(prevX - joyX) > 40 && !sudo)) {
+    to_transmit = String(y_dir) + String(x);
+    BTSerial.println(to_transmit);
+    Serial.println("^ " + to_transmit);
+  } // send instructions for x and y in one string
   if (Serial.available()) {
     received = Serial.readString();
     received.trim();
     Serial.println("^ " + received);
-    if (received == "01" || received == "sudo") {
+    if (received == "91" || received == "sudo") {
       if (sudo) {
         sudo = false;
         Serial.println("Sudo disabled");
@@ -126,21 +109,15 @@ void loop() {
     received = BTSerial.readString();
     if (received.substring(0,1) == "x" && !sudo) {
       // confirm receiver has received the correct instructions
-      int car_y = received.substring(1,2).toInt() - 1;
+      int car_y = received.substring(1,2).toInt();
       int car_x = received.substring(2).toInt();
       Serial.println("x: " + String(x) + ", y: " + String(y_dir));
-      if (car_y != y_dir) {
-        BTSerial.println("2" + String(y_dir));
-        Serial.println("2" + String(y_dir));
-        delay(10);
-      }
-      if (abs(car_x - x) > 30) {
-        BTSerial.println("1" + String(x));
-        Serial.println("1" + String(x));
-        delay(10);
-      }
+      if (car_y != y_dir || car_x != x) {
+        BTSerial.println(String(y_dir) + String(x));
+        Serial.println(String(y_dir) + String(y_dir));
     }
     Serial.print("v " + received);
+    }
   }
   if ((digitalRead(BT_STATE) == 1) && !bt_connected) {
     bt_connected = true;

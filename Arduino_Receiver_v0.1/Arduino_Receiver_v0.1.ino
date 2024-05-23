@@ -50,16 +50,10 @@ int y = 0;
 // int motor_r = 0;
 // int motor_l = 0;
 bool shut_down = false;
-int buffer[] = {0, 0};
+int buffer[] = {0, 0}; // {y, x}
 unsigned long lastSerialMillis = 0;  // Milliseconds since last serial check
 const int serialCheckInterval = 10; // Check for data every 10 milliseconds
 
-// void make_step(bool a, bool b, bool c, bool d) {
-//   if (a) { digitalWrite(STEPPER_1, HIGH); } else { digitalWrite(STEPPER_1, LOW); }
-//   if (b) { digitalWrite(STEPPER_2, HIGH); } else { digitalWrite(STEPPER_2, LOW); }
-//   if (c) { digitalWrite(STEPPER_3, HIGH); } else { digitalWrite(STEPPER_3, LOW); }
-//   if (d) { digitalWrite(STEPPER_4, HIGH); } else { digitalWrite(STEPPER_4, LOW); }
-// }
 
 void stop_stepper() {
   digitalWrite(STEPPER_1, LOW);
@@ -69,63 +63,7 @@ void stop_stepper() {
   delay(3);
 }
 
-// int rot_L(int a) {
-//   // Serial.println("1: " + String(a));
-//   // a = a << 1 & 0xf;
-//   // Serial.println("2: " + String(a));
-//   // a = a * 2;
-//   // if (a >= 16) {
-//     // a = 1;
-//     // Serial.println("3: " + String(a));
-//   // }
-//   bool first = a & 0x08 >> 3;
-//   bool second = a & 0x04 >> 2;
-//   bool third = a & 0x02 >> 1;
-//   bool fourth = a & 0x01;
-//   // Serial.println(String(a & 0xf));
-//   Serial.println(String(a & 0x08) + ", " + String(a & 0x04) + ", " + String(a & 0x02) + ", " + String(a & 0x01));
-//   Serial.println(String(first) + ", " + String(second) + ", " + String(third) + ", " + String(fourth));
-//   if (first) { digitalWrite(STEPPER_1, HIGH); } else { digitalWrite(STEPPER_1, LOW); }
-//   if (second) { digitalWrite(STEPPER_2, HIGH); } else { digitalWrite(STEPPER_2, LOW); }
-//   if (third) { digitalWrite(STEPPER_3, HIGH); } else { digitalWrite(STEPPER_3, LOW); }
-//   if (fourth) { digitalWrite(STEPPER_4, HIGH); } else { digitalWrite(STEPPER_4, LOW); }
-//   delay(500);
-//   return a;
-// }
-
-// int rot_R(int a) {
-  // Serial.println("1: " + String(a));
-  // a = a >> 1 & 0xf;
-  // Serial.println("2: " + String(a));
-  // a = a / 2;
-  // if (a == 0 || a < 1) {
-    // a = 1;
-    // Serial.println("3: " + String(a));
-  // }
-  // bool first = a & 0x08 >> 3;
-  // bool second = a & 0x04 >> 2;
-  // bool third = a & 0x02 >> 1;
-  // bool fourth = a & 0x01;
-  // // Serial.println(String(a & 0xf));
-  // Serial.println(String(a & 0x08) + ", " + String(a & 0x04) + ", " + String(a & 0x02) + ", " + String(a & 0x01));
-  // Serial.println(String(first) + ", " + String(second) + ", " + String(third) + ", " + String(fourth));
-  // if (first) { digitalWrite(STEPPER_1, HIGH); } else { digitalWrite(STEPPER_1, LOW); }
-  // if (second) { digitalWrite(STEPPER_2, HIGH); } else { digitalWrite(STEPPER_2, LOW); }
-  // if (third) { digitalWrite(STEPPER_3, HIGH); } else { digitalWrite(STEPPER_3, LOW); }
-  // if (fourth) { digitalWrite(STEPPER_4, HIGH); } else { digitalWrite(STEPPER_4, LOW); }
-  // delay(500);
-  // return a;
-// }
-
 int rot(int a) {
-  // Serial.println("1: " + String(a));
-  // a = a >> 1 & 0xf;
-  // Serial.println("2: " + String(a));
-  // a = a / 2;
-  // if (a == 0 || a < 1) {
-    // a = 1;
-    // Serial.println("3: " + String(a));
-  // }
   // bool first = a & 0x08 >> 3;
   // bool second = a & 0x04 >> 2;
   // bool third = a & 0x02 >> 1;
@@ -167,44 +105,25 @@ void setup() {
 
 
 void writeToBuffer(String data) {
-  if (data.substring(0,1).toInt() == 1) {
-    buffer[1] = data.substring(1).toInt();
-  } else {
-    buffer[0] = data.substring(1).toInt();
-  }
+  // if (data.substring(0,1).toInt() == 1) {
+  //   buffer[1] = data.substring(1).toInt();
+  // } else {
+  //   buffer[0] = data.substring(1).toInt();
+  // }
+  buffer[0] = data.substring(0,1).toInt();
+  buffer[1] = data.substring(1).toInt();
 }
 
 
 void loop() {
-  // commented out to test polling the Serial.available() property (bottom of void loop() {..})
-  // if (Serial.available() && !shut_down) { // check if new instructions are available
-  //   // digitalWrite(LED, HIGH);
-  //   // delay(20);
-  //   // digitalWrite(LED, LOW);
-  //   received = Serial.readString(); // receive instructions
-  //   Serial.println(received); // for testing
-  //   if (received == "00") {
-  //     // shutdown everything (needs to be updated)
-  //     Serial.println("Shutting down...");
-  //     digitalWrite(LED, HIGH);
-  //     delay(1000);
-  //     digitalWrite(LED, LOW);
-  //     shut_down = true;
-  //   }
-  //   writeToBuffer(received); // write received instructions to buffer (to avoid overload)
-  //   for (int i = 0; i < 2; i++) { // print buffer (for testing)
-  //     Serial.print(String(buffer[i]) + " ");
-  //   }
-  // }  
-  // else { // if no new instructions are available, carry existing instructions out if needed
     if (y != buffer[0]) {
       // check if forwards/backwards needs to be updated
-      if (buffer[0] == 1) {
+      if (buffer[0] == 2) {
         digitalWrite(MOTOR_RF, HIGH);
         digitalWrite(MOTOR_LF, HIGH);
         digitalWrite(MOTOR_LB, LOW);
         digitalWrite(MOTOR_RB, LOW);
-      } else if (buffer[0] == -1) {
+      } else if (buffer[0] == 0) {
         digitalWrite(MOTOR_RF, LOW);
         digitalWrite(MOTOR_LF, LOW);
         digitalWrite(MOTOR_LB, HIGH);
@@ -232,38 +151,19 @@ void loop() {
       // update steering if required
       if (x_change > 0) {
         // Turning CW
-        // make_step(true, false, false, false);
-        // delay(3);
-        // make_step(false, true, false, false);
-        // delay(3);
-        // make_step(false, false, true, false);
-        // delay(3);
-        // make_step(false, false, false, true);
-        // delay(3);
         for (int i = 8; i >= 1; i = i >> 1) {
           rot(i);
-          // Serial.println(i);
         }
         x_change--;
       } else if (x_change < 0) {
         // Turning CCW
-        // make_step(false, false, false, true);
-        // delay(3);
-        // make_step(false, false, true, false);
-        // delay(3);
-        // make_step(false, true, false, false);
-        // delay(3);
-        // make_step(true, false, false, false);
-        // delay(3);
         for (int i = 1; i <= 8; i = i << 1) {
           rot(i);
-          // Serial.println(i);
         }
         x_change++;
       }
     } else {
       // turn off stepper motor if no steering adjustments are needed
-      // make_step(false, false, false, false);
       stop_stepper();
     }
     if (shut_down) {
@@ -278,13 +178,9 @@ void loop() {
     unsigned long currentMillis = millis();
     if (currentMillis - lastSerialMillis >= serialCheckInterval) {
       if (Serial.available()) {
-        // digitalWrite(LED, HIGH);
-        // delay(20);
-        // digitalWrite(LED, LOW);
         received = Serial.readString(); // receive instructions
-        // Serial.println(received); // for testing
-        if (received == "00") {
-          // shutdown everything (needs to be updated)
+        if (received == "99") {
+          // shutdown everything
           Serial.println("Shutting down...");
           digitalWrite(LED, HIGH);
           delay(1000);
@@ -292,11 +188,8 @@ void loop() {
           shut_down = true;
         }
         writeToBuffer(received); // write received instructions to buffer (to avoid overload)
-        // for (int i = 0; i < 2; i++) { // print buffer (for testing)
-        //   Serial.print(String(buffer[i]) + " ");
-        // }
         // send buffer to sender to check if instructions were received correctly
-        Serial.println("x" + String(buffer[0] + 1) + String(buffer[1]));
+        Serial.println("x" + String(buffer[0]) + String(buffer[1]));
       }
       lastSerialMillis = currentMillis;
     }
