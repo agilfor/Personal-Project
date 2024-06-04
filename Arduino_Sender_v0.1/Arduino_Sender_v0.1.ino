@@ -43,9 +43,10 @@ String received;
 String to_transmit;
 bool bt_connected;
 int y_dir = 0;
-// bool y_changed = false;
 int x;
 bool sudo = false;
+bool changed = false;
+String prev_transmit;
 
 void setup() {
   pinMode(JOY_BTN, INPUT);
@@ -64,7 +65,7 @@ void loop() {
     // reduce measurements so that the motor turns within the limits of the hardware
     // the multiplying by 100 is done so that I don't have to deal with float to int conversions
     joyX = joyX - 512;
-    joyX = joyX / 2;
+    joyX = floor(joyX / 3.2);
     joyY = joyY - 512;
     joyY =  -1 * joyY;
   }
@@ -78,16 +79,20 @@ void loop() {
     } else if (abs(joyY) <= 250 && y_dir != 1) {
       y_dir = 1;
     }
+    changed = true;
   }
   if (abs(prevX - joyX) > 40 && !sudo) {
     prevX = joyX;
-    // to_transmit = "1" + String(joyX);
     x = joyX;
+    changed = true;
   }
-  if ((abs(prevY - joyY) > 40 && !sudo) || (abs(prevX - joyX) > 40 && !sudo)) {
-    to_transmit = String(y_dir) + String(x);
+  to_transmit = String(y_dir) + String(x);
+  if (changed && to_transmit != prev_transmit) {
     BTSerial.println(to_transmit);
     Serial.println("^ " + to_transmit);
+    changed = false;
+    prev_transmit = to_transmit;
+    delay(10);
   } // send instructions for x and y in one string
   if (Serial.available()) {
     received = Serial.readString();
@@ -115,9 +120,9 @@ void loop() {
       if (car_y != y_dir || car_x != x) {
         BTSerial.println(String(y_dir) + String(x));
         Serial.println(String(y_dir) + String(y_dir));
+      }
     }
     Serial.print("v " + received);
-    }
   }
   if ((digitalRead(BT_STATE) == 1) && !bt_connected) {
     bt_connected = true;
