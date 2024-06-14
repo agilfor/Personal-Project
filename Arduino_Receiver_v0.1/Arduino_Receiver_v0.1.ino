@@ -186,6 +186,12 @@ void loop() {
           delay(1000);
           digitalWrite(LED, LOW);
           shut_down = true;
+        } else if (received == "98" && shut_down) {
+          Serial.println("Rebooting...");
+          digitalWrite(LED, HIGH);
+          delay(1000);
+          digitalWrite(LED, LOW);
+          shut_down = false;
         }
         writeToBuffer(received); // write received instructions to buffer (to avoid overload)
         // send buffer to sender to check if instructions were received correctly
