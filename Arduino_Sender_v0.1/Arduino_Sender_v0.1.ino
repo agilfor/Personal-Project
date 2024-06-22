@@ -42,11 +42,12 @@ int prevY = 0;
 String received;
 String to_transmit;
 bool bt_connected;
-int y_dir = 0;
+int y_dir = 1;
 int x;
 bool sudo = false;
-bool changed = false;
 String prev_transmit;
+long int joy_still_x;
+long int joy_still_y;
 
 void setup() {
   pinMode(JOY_BTN, INPUT);
@@ -71,6 +72,7 @@ void loop() {
   }
 
   if (abs(prevY - joyY) > 40 && !sudo) {
+    // check if the y-value of the joystick has been changed significantly
     prevY = joyY;
     if (joyY > 250 && y_dir != 2) {
       y_dir = 2;
@@ -79,26 +81,34 @@ void loop() {
     } else if (abs(joyY) <= 250 && y_dir != 1) {
       y_dir = 1;
     }
-    changed = true;
+    joy_still_y = millis();
   }
   if (abs(prevX - joyX) > 40 && !sudo) {
+    // check if the x-value of the joystick has been changed significantly
     prevX = joyX;
     x = joyX;
-    changed = true;
+    joy_still_x = millis();
   }
   to_transmit = String(y_dir) + String(x);
-  if (changed && to_transmit != prev_transmit) {
+  if (to_transmit != prev_transmit && (millis() - joy_still_x) >= 20 && (millis() - joy_still_y) >= 20) {
+    // if x and/or y has changed significantly, send intructions to the car
     BTSerial.println(to_transmit);
-    Serial.println("^ " + to_transmit);
-    changed = false;
+    // Serial.println("^ " + to_transmit);
+    joy_still_x = false;
+    joy_still_y = false;
     prev_transmit = to_transmit;
-    delay(10);
+    digitalWrite(LED, HIGH);
+    delay(30);
+    digitalWrite(LED, LOW);
+    delay(20);
   } // send instructions for x and y in one string
   if (Serial.available()) {
+    // if user sends input through the serial monitor...
     received = Serial.readString();
-    received.trim();
+    received.trim(); // remove newline characters
     Serial.println("^ " + received);
     if (received == "91" || received == "sudo") {
+      // toggle sudo mode
       if (sudo) {
         sudo = false;
         Serial.println("Sudo disabled");
@@ -107,10 +117,12 @@ void loop() {
         Serial.println("Sudo enabled");
       }
     } else {
+      // forward Serial input to car
       BTSerial.print(received);
     }
   }
   if (BTSerial.available()) {
+    // check if car has responded
     received = BTSerial.readString();
     if (received.substring(0,1) == "x" && !sudo) {
       // confirm receiver has received the correct instructions
@@ -125,6 +137,7 @@ void loop() {
     Serial.print("v " + received);
   }
   if ((digitalRead(BT_STATE) == 1) && !bt_connected) {
+    // check bluetooth connected and notify user
     bt_connected = true;
     Serial.println("Bluetooth connected");
   } else if ((digitalRead(BT_STATE) == 0) && bt_connected) {
